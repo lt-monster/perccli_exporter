@@ -1,0 +1,8 @@
+.vs
+.idea
+.claude
+.trae
+*.user
+PercCli.Exporter.Benchmark
+PercCli.Exporter.Old
+PercCli.Exporter.Tests

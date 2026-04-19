@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <PublishAot>true</PublishAot>
+        <RootNamespace>PercCli.Exporter</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="SSH.NET" Version="2025.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Metrics\asd.cs" />
+      <Compile Remove="Stores\VirtualDriveMetricStore.cs" />
+      <Compile Remove="Stores\ControllerMetricStore.cs" />
+    </ItemGroup>
+
+</Project>
