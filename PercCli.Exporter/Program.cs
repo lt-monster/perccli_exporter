@@ -46,6 +46,7 @@ app.MapGet("/metrics", async (HttpContext context, PercMetricWriter percMetricWr
 
     percMetricWriter.WriteControllerMetrics(context.Response.BodyWriter);
     percMetricWriter.WriteVirtualDriveMetrics(context.Response.BodyWriter);
+    percMetricWriter.WritePhysicalDriveMetrics(context.Response.BodyWriter);
 
     await context.Response.BodyWriter.FlushAsync();
 });

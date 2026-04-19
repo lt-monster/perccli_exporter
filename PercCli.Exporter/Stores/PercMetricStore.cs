@@ -24,20 +24,22 @@ public sealed class PercCliMetricSnapshot
     public MetricStore<ControllerMetric> ControllerMetricStore { get; } = new();
     
     public MetricStore<VirtualDriveMetric> VirtualDriveMetricStore { get; } = new();
+
+    public MetricStore<PhysicalDriveMetric> PhysicalDriveMetricStore { get; } = new();
 }
 
 public sealed class MetricStore<T>: IEnumerable<T?> where T: class,new()
 {
-    public T?[] Metrics { get; private set; } = ArrayPool<T?>.Shared.Rent(16);
+    private T?[] metrics = ArrayPool<T?>.Shared.Rent(16);
     
     public int Count { get; set; }
     
     private void ResizeControllers()
     {
-        var newMetrics = ArrayPool<T?>.Shared.Rent(Metrics.Length+16);
-        Array.Copy(Metrics, newMetrics, Metrics.Length);
-        ArrayPool<T?>.Shared.Return(Metrics);
-        Metrics = newMetrics;
+        var newMetrics = ArrayPool<T?>.Shared.Rent(metrics.Length+16);
+        Array.Copy(metrics, newMetrics, metrics.Length);
+        ArrayPool<T?>.Shared.Return(metrics);
+        metrics = newMetrics;
     }
     
     public T this[int index]
@@ -48,12 +50,12 @@ public sealed class MetricStore<T>: IEnumerable<T?> where T: class,new()
             {
                 throw new IndexOutOfRangeException("Index is out of range.");
             }
-            if (index >= Metrics.Length)
+            if (index >= metrics.Length)
             {
                 ResizeControllers();
             }
 
-            return Metrics[index] ??= new();
+            return metrics[index] ??= new();
         }
         set
         {
@@ -62,12 +64,12 @@ public sealed class MetricStore<T>: IEnumerable<T?> where T: class,new()
                 throw new IndexOutOfRangeException("Index is out of range.");
             }
             
-            if (index >= Metrics.Length)
+            if (index >= metrics.Length)
             {
                 ResizeControllers();
             }
 
-            Metrics[index] = value;
+            metrics[index] = value;
         }
     }
 
@@ -75,7 +77,7 @@ public sealed class MetricStore<T>: IEnumerable<T?> where T: class,new()
     {
         for (var i = 0; i < Count; i++)
         {
-            yield return Metrics[i];
+            yield return metrics[i];
         }
     }
 

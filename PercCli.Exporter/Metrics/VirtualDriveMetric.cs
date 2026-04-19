@@ -17,6 +17,9 @@ public sealed class VirtualDriveMetric
     public byte Scc { get; set; }
     public double SizeBytes { get; set; }
     public StringToken Name { get; set; }
+    public byte ActiveOperations { get; set; }
+    public StringToken OsDevice { get; set; }
+    public StringToken NaaId { get; set; }
 
     public byte SetState(Utf8JsonReader reader)
     {
@@ -47,6 +50,27 @@ public sealed class VirtualDriveMetric
         {
             _ when reader.ValueTextEquals("ON"u8 ) => 1,
             _ => 0
+        };
+    }
+    
+    public byte SetActiveOperation(Utf8JsonReader reader)
+    {
+        reader.Read();
+        return ActiveOperations = reader.ValueSpan switch
+        {
+            // 无活跃操作 → 0
+            _ when reader.ValueTextEquals("None"u8) => 0,
+            // 所有后台运行任务 → 1
+            _ when reader.ValueTextEquals("Rebuild"u8) 
+                   || reader.ValueTextEquals("Check"u8)
+                   || reader.ValueTextEquals("Init"u8)
+                   || reader.ValueTextEquals("Clear"u8)
+                   || reader.ValueTextEquals("Migrate"u8)
+                   || reader.ValueTextEquals("Recon"u8)
+                   || reader.ValueTextEquals("Expand"u8)
+                   || reader.ValueTextEquals("Patrol Read"u8) => 1,
+            // 未知 → 2
+            _ => 2
         };
     }
 }

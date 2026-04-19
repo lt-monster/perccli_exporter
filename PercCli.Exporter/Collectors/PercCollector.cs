@@ -132,43 +132,90 @@ public abstract class PercCollector(PercMetricStore metricStore)
 
     protected async Task HandingVirtualDrives(Stream stream, int ctlId, CancellationToken stoppingToken)
     {
-        VirtualDriveMetric? metric = null;
+        VirtualDriveMetric? vdMetric = null;
+        PhysicalDriveMetric? pdMetric = null;
         var pipeReader = PipeReader.Create(stream);
         JsonReaderState state = default;
         var vdBasicInfoReading = false; // 类似/c0/v0的对象读取
+        var pdBasicInfoReading = false;
         while (true)
         {
             var result = await pipeReader.ReadAsync(stoppingToken);
             var buffer = result.Buffer;
-    
+
             var jsonReader = new Utf8JsonReader(buffer, isFinalBlock: result.IsCompleted, state: state);
 
             while (jsonReader.Read())
             {
-                if (jsonReader.TokenType == JsonTokenType.PropertyName && jsonReader.ValueTextEquals("DG/VD"))
+                // VD 入口：DG/VD 属性
+                if (jsonReader.TokenType == JsonTokenType.PropertyName && jsonReader.ValueTextEquals("DG/VD"u8))
                 {
                     vdBasicInfoReading = true;
                     MetricStore.Snapshot.VirtualDriveMetricStore.Count++;
-                    metric = MetricStore.Snapshot.VirtualDriveMetricStore[MetricStore.Snapshot.VirtualDriveMetricStore.Count - 1];
-                    metric.CtlId = ctlId;
-                    
+                    vdMetric = MetricStore.Snapshot.VirtualDriveMetricStore[MetricStore.Snapshot.VirtualDriveMetricStore.Count - 1];
+                    vdMetric.CtlId = ctlId;
+
                     jsonReader.Read();
                     var dgvdSpan = jsonReader.ValueSpan;
                     if (Utf8Parser.TryParse(dgvdSpan, out int dg, out int bytesConsumed))
                     {
-                        metric.Dg = dg;
+                        vdMetric.Dg = dg;
 
                         if (dgvdSpan.Length > bytesConsumed)
                         {
                             if (Utf8Parser.TryParse(dgvdSpan[(bytesConsumed+1)..], out int vd, out var _))
                             {
-                                metric.Vd = vd;
+                                vdMetric.Vd = vd;
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                // PD 入口：EID:Slt 属性，每个 PD 对象的第一个字段
+                if (jsonReader.TokenType == JsonTokenType.PropertyName && jsonReader.ValueTextEquals("EID:Slt"u8))
+                {
+                    pdBasicInfoReading = true;
+                    MetricStore.Snapshot.PhysicalDriveMetricStore.Count++;
+                    pdMetric = MetricStore.Snapshot.PhysicalDriveMetricStore[MetricStore.Snapshot.PhysicalDriveMetricStore.Count - 1];
+                    pdMetric.CtlId = ctlId;
+                    pdMetric.Vd = vdMetric?.Vd ?? 0;
+
+                    jsonReader.Read();
+                    var esSpan = jsonReader.ValueSpan;
+                    if (Utf8Parser.TryParse(esSpan, out int eid, out int bytesConsumed))
+                    {
+                        pdMetric.Eid = eid;
+
+                        if (esSpan.Length > bytesConsumed)
+                        {
+                            if (Utf8Parser.TryParse(esSpan[(bytesConsumed+1)..], out int slotId, out var _))
+                            {
+                                pdMetric.Slt = slotId;
                             }
                         }
                     }
                     continue;
                 }
                 
+                if (jsonReader.TokenType == JsonTokenType.PropertyName && jsonReader.ValueTextEquals("OS Drive Name"u8))
+                {
+                    vdMetric?.OsDevice = GetStringMetric(jsonReader);
+                    continue;
+                }
+                
+                if (jsonReader.TokenType == JsonTokenType.PropertyName && jsonReader.ValueTextEquals("SCSI NAA Id"u8))
+                {
+                    vdMetric?.NaaId = GetStringMetric(jsonReader);
+                    continue;
+                }
+                
+                if (jsonReader.TokenType == JsonTokenType.PropertyName && jsonReader.ValueTextEquals("Active Operations"u8))
+                {
+                    vdMetric?.SetActiveOperation(jsonReader);
+                    continue;
+                }
+
                 if (vdBasicInfoReading)
                 {
                     if (jsonReader.TokenType == JsonTokenType.EndObject)
@@ -179,18 +226,46 @@ public abstract class PercCollector(PercMetricStore metricStore)
 
                     if (jsonReader.TokenType == JsonTokenType.PropertyName)
                     {
-                        var propertyName = jsonReader.ValueSpan;
-                        _ = propertyName switch
+                        _ = jsonReader.ValueSpan switch
                         {
-                            _ when jsonReader.ValueTextEquals("TYPE"u8) => metric?.Type = GetStringMetric(jsonReader),
-                            _ when jsonReader.ValueTextEquals("State"u8) => metric?.SetState(jsonReader),
-                            _ when jsonReader.ValueTextEquals("Access"u8) => metric?.Access = GetStringMetric(jsonReader),
-                            _ when jsonReader.ValueTextEquals("Consist"u8) => metric?.SetConsist(jsonReader),
-                            _ when jsonReader.ValueTextEquals("Cache"u8) => metric?.Cache = GetStringMetric(jsonReader),
-                            _ when jsonReader.ValueTextEquals("Cac"u8) => metric?.Cac = GetStringMetric(jsonReader),
-                            _ when jsonReader.ValueTextEquals("sCC"u8) => metric?.SetScc(jsonReader),
-                            _ when jsonReader.ValueTextEquals("Size"u8) => metric?.SizeBytes = ParseSize(jsonReader),
-                            _ when jsonReader.ValueTextEquals("Name"u8) => metric?.Name = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("TYPE"u8)    => vdMetric?.Type = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("State"u8)   => vdMetric?.SetState(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Access"u8)  => vdMetric?.Access = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Consist"u8) => vdMetric?.SetConsist(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Cache"u8)   => vdMetric?.Cache = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Cac"u8)     => vdMetric?.Cac = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("sCC"u8)     => vdMetric?.SetScc(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Size"u8)    => vdMetric?.SizeBytes = ParseSize(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Name"u8)    => vdMetric?.Name = GetStringMetric(jsonReader),
+                            _ => 0
+                        };
+                    }
+                }
+
+                if (pdBasicInfoReading)
+                {
+                    if (jsonReader.TokenType == JsonTokenType.EndObject)
+                    {
+                        pdBasicInfoReading = false;
+                        continue;
+                    }
+
+                    if (jsonReader.TokenType == JsonTokenType.PropertyName)
+                    {
+                        _ = jsonReader.ValueSpan switch
+                        {
+                            _ when jsonReader.ValueTextEquals("DID"u8)   => pdMetric?.Did = GetIntMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("State"u8) => pdMetric?.SetState(jsonReader),
+                            _ when jsonReader.ValueTextEquals("DG"u8)    => pdMetric?.Dg = GetIntMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Size"u8)  => pdMetric?.SizeBytes = ParseSize(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Intf"u8)  => pdMetric?.Intf = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Med"u8)   => pdMetric?.Med = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("SED"u8)   => pdMetric?.Sed = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("PI"u8)    => pdMetric?.Pi = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("SeSz"u8)  => pdMetric?.SeSz = ParseSectorSize(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Model"u8) => pdMetric?.Model = GetStringMetric(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Sp"u8)    => pdMetric?.SetSp(jsonReader),
+                            _ when jsonReader.ValueTextEquals("Type"u8)  => pdMetric?.Type = GetStringMetric(jsonReader),
                             _ => 0
                         };
                     }
@@ -204,6 +279,20 @@ public abstract class PercCollector(PercMetricStore metricStore)
             if (result.IsCompleted) break;
         }
         await pipeReader.CompleteAsync();
+    }
+
+    protected static double ParseSectorSize(Utf8JsonReader reader)
+    {
+        reader.Read();
+        var span = reader.ValueSpan;
+        // 格式如 "512B" 或 "4kB"
+        if (Utf8Parser.TryParse(span, out double num, out var consumed))
+        {
+            var unit = span[consumed..];
+            if (unit.StartsWith("k"u8) || unit.StartsWith("K"u8)) return num * 1024;
+            return num;
+        }
+        return 0;
     }
     
     public abstract Task CollectControllerMetrics(CancellationToken stoppingToken);

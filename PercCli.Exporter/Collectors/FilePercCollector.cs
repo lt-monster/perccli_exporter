@@ -22,6 +22,7 @@ public sealed class FilePercCollector(PercMetricStore metricStore): PercCollecto
     public override async Task CollectVirtualDriveMetrics(CancellationToken stoppingToken)
     {
         MetricStore.Snapshot.VirtualDriveMetricStore.Count = 0;
+        MetricStore.Snapshot.PhysicalDriveMetricStore.Count = 0;
 
         foreach (var ctl in MetricStore.Snapshot.ControllerMetricStore)
         {

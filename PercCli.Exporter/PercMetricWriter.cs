@@ -145,6 +145,7 @@ public sealed class PercMetricWriter(PercMetricStore metricStore)
         var consistBuffer = new ArrayBufferWriter<byte>(1024);
         var sccBuffer = new ArrayBufferWriter<byte>(1024);
         var sizeBuffer = new ArrayBufferWriter<byte>(1024);
+        var activeOperationsBuffer = new ArrayBufferWriter<byte>(1024);
 
         writer.Write("# HELP perccli_virtual_drive_info Metadata about the virtual drive.\n"u8);
         writer.Write("# TYPE perccli_virtual_drive_info gauge\n"u8);
@@ -160,6 +161,9 @@ public sealed class PercMetricWriter(PercMetricStore metricStore)
 
         sizeBuffer.Write("# HELP perccli_virtual_drive_size_bytes Size of the virtual drive in bytes.\n"u8);
         sizeBuffer.Write("# TYPE perccli_virtual_drive_size_bytes gauge\n"u8);
+        
+        activeOperationsBuffer.Write("# HELP perccli_virtual_drive_active_operation RAID controller virtual drive active operation status. 0 = No active operation (normal), 1 = Background operation in progress (rebuild/check/init/migrate/expand/patrol read), 2 = Unknown operation.\n"u8);
+        activeOperationsBuffer.Write("# TYPE perccli_virtual_drive_active_operation gauge\n"u8);
 
         foreach (var vd in currentVds)
         {
@@ -181,6 +185,10 @@ public sealed class PercMetricWriter(PercMetricStore metricStore)
             writer.Write(StringStore.GetBytes(vd.Cac));
             writer.Write("\",name=\""u8);
             writer.Write(StringStore.GetBytes(vd.Name));
+            writer.Write("\",os_device=\""u8);
+            writer.Write(StringStore.GetBytes(vd.OsDevice));
+            writer.Write("\",naa_id=\""u8);
+            writer.Write(StringStore.GetBytes(vd.NaaId));
             writer.Write("\"} 1"u8);
             writer.Write("\n"u8);
 
@@ -226,12 +234,134 @@ public sealed class PercMetricWriter(PercMetricStore metricStore)
             sizeBuffer.Write("\"} "u8);
             sizeBuffer.WriteDouble(vd.SizeBytes);
             sizeBuffer.Write("\n"u8);
+
+            activeOperationsBuffer.Write("perccli_virtual_drive_active_operation{ctl=\""u8);
+            activeOperationsBuffer.WriteInt(vd.CtlId);
+            activeOperationsBuffer.Write("\",dg=\""u8);
+            activeOperationsBuffer.WriteInt(vd.Dg);
+            activeOperationsBuffer.Write("\",vd=\""u8);
+            activeOperationsBuffer.WriteInt(vd.Vd);
+            activeOperationsBuffer.Write("\"} "u8);
+            activeOperationsBuffer.WriteDouble(vd.ActiveOperations);
+            activeOperationsBuffer.Write("\n"u8);
         }
 
         writer.Write(stateBuffer.WrittenSpan);
         writer.Write(consistBuffer.WrittenSpan);
         writer.Write(sccBuffer.WrittenSpan);
         writer.Write(sizeBuffer.WrittenSpan);
+    }
+
+    public void WritePhysicalDriveMetrics(PipeWriter writer)
+    {
+        var currentPds = metricStore.Current.PhysicalDriveMetricStore;
+
+        if (currentPds.Count == 0) return;
+
+        var stateBuffer = new ArrayBufferWriter<byte>(1024);
+        var sizeBuffer = new ArrayBufferWriter<byte>(1024);
+        var seSzBuffer = new ArrayBufferWriter<byte>(1024);
+        var spBuffer = new ArrayBufferWriter<byte>(1024);
+
+        writer.Write("# HELP perccli_physical_drive_info Metadata about the physical drive.\n"u8);
+        writer.Write("# TYPE perccli_physical_drive_info gauge\n"u8);
+
+        stateBuffer.Write("# HELP perccli_physical_drive_state State of the physical drive (1=Onln, 2=Offln, 3=Rbld, 4=GHS, 5=UGood, 0=other).\n"u8);
+        stateBuffer.Write("# TYPE perccli_physical_drive_state gauge\n"u8);
+
+        sizeBuffer.Write("# HELP perccli_physical_drive_size_bytes Size of the physical drive in bytes.\n"u8);
+        sizeBuffer.Write("# TYPE perccli_physical_drive_size_bytes gauge\n"u8);
+
+        seSzBuffer.Write("# HELP perccli_physical_drive_sector_size_bytes Sector size of the physical drive in bytes.\n"u8);
+        seSzBuffer.Write("# TYPE perccli_physical_drive_sector_size_bytes gauge\n"u8);
+
+        spBuffer.Write("# HELP perccli_physical_drive_sp_status Spare status of the physical drive (0=not spare, 1=HS dedicated hot spare, 2=PS global hot spare).\n"u8);
+        spBuffer.Write("# TYPE perccli_physical_drive_sp_status gauge\n"u8);
+
+        foreach (var pd in currentPds)
+        {
+            if (pd is null) continue;
+
+            writer.Write("perccli_physical_drive_info{ctl=\""u8);
+            writer.WriteInt(pd.CtlId);
+            writer.Write("\",vd=\""u8);
+            writer.WriteInt(pd.Vd);
+            writer.Write("\",eid=\""u8);
+            writer.WriteInt(pd.Eid);
+            writer.Write("\",slt=\""u8);
+            writer.WriteInt(pd.Slt);
+            writer.Write("\",did=\""u8);
+            writer.WriteInt(pd.Did);
+            writer.Write("\",dg=\""u8);
+            writer.WriteInt(pd.Dg);
+            writer.Write("\",intf=\""u8);
+            writer.Write(StringStore.GetBytes(pd.Intf));
+            writer.Write("\",med=\""u8);
+            writer.Write(StringStore.GetBytes(pd.Med));
+            writer.Write("\",model=\""u8);
+            writer.Write(StringStore.GetBytes(pd.Model));
+            writer.Write("\",type=\""u8);
+            writer.Write(StringStore.GetBytes(pd.Type));
+            writer.Write("\",sed=\""u8);
+            writer.WriteInt(pd.Sed);
+            writer.Write("\",pi=\""u8);
+            writer.WriteInt(pd.Pi);
+            writer.Write("\"} 1\n"u8);
+
+            stateBuffer.Write("perccli_physical_drive_state{ctl=\""u8);
+            stateBuffer.WriteInt(pd.CtlId);
+            stateBuffer.Write("\",vd=\""u8);
+            stateBuffer.WriteInt(pd.Vd);
+            stateBuffer.Write("\",eid=\""u8);
+            stateBuffer.WriteInt(pd.Eid);
+            stateBuffer.Write("\",slt=\""u8);
+            stateBuffer.WriteInt(pd.Slt);
+            stateBuffer.Write("\"} "u8);
+            stateBuffer.WriteInt(pd.State);
+            stateBuffer.Write("\n"u8);
+
+            sizeBuffer.Write("perccli_physical_drive_size_bytes{ctl=\""u8);
+            sizeBuffer.WriteInt(pd.CtlId);
+            sizeBuffer.Write("\",vd=\""u8);
+            sizeBuffer.WriteInt(pd.Vd);
+            sizeBuffer.Write("\",eid=\""u8);
+            sizeBuffer.WriteInt(pd.Eid);
+            sizeBuffer.Write("\",slt=\""u8);
+            sizeBuffer.WriteInt(pd.Slt);
+            sizeBuffer.Write("\"} "u8);
+            sizeBuffer.WriteDouble(pd.SizeBytes);
+            sizeBuffer.Write("\n"u8);
+
+            seSzBuffer.Write("perccli_physical_drive_sector_size_bytes{ctl=\""u8);
+            seSzBuffer.WriteInt(pd.CtlId);
+            seSzBuffer.Write("\",vd=\""u8);
+            seSzBuffer.WriteInt(pd.Vd);
+            seSzBuffer.Write("\",eid=\""u8);
+            seSzBuffer.WriteInt(pd.Eid);
+            seSzBuffer.Write("\",slt=\""u8);
+            seSzBuffer.WriteInt(pd.Slt);
+            seSzBuffer.Write("\"} "u8);
+            seSzBuffer.WriteDouble(pd.SeSz);
+            seSzBuffer.Write("\n"u8);
+
+            // 0=未配置热备, 1=专用热备(HS), 2=全局热备(PS)
+            spBuffer.Write("perccli_physical_drive_sp_status{ctl=\""u8);
+            spBuffer.WriteInt(pd.CtlId);
+            spBuffer.Write("\",vd=\""u8);
+            spBuffer.WriteInt(pd.Vd);
+            spBuffer.Write("\",eid=\""u8);
+            spBuffer.WriteInt(pd.Eid);
+            spBuffer.Write("\",slt=\""u8);
+            spBuffer.WriteInt(pd.Slt);
+            spBuffer.Write("\"} "u8);
+            spBuffer.WriteInt(pd.Sp);
+            spBuffer.Write("\n"u8);
+        }
+
+        writer.Write(stateBuffer.WrittenSpan);
+        writer.Write(sizeBuffer.WrittenSpan);
+        writer.Write(seSzBuffer.WrittenSpan);
+        writer.Write(spBuffer.WrittenSpan);
     }
 }
 
