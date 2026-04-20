@@ -18,53 +18,14 @@ public abstract class PercCollector(PercMetricStore metricStore)
     
     protected const string CMD_CONTROLLERS = "sudo perccli64 show J";
 
-    protected FrozenDictionary<int, string> virtualDriveQueryCmds = FrozenDictionary<int, string>.Empty;
+    private FrozenDictionary<int, string> virtualDriveQueryCmds = FrozenDictionary<int, string>.Empty;
 
-    public PercMetricStore MetricStore => metricStore;
+    protected PercMetricStore MetricStore => metricStore;
+    public abstract Task CollectControllerMetrics(CancellationToken stoppingToken);
 
-    protected string GetVirtualDriveQueryCmd(int ctlId)
-    {
-        if (!virtualDriveQueryCmds.TryGetValue(ctlId, out var cmd))
-        {
-            cmd = $"sudo perccli64 /c{ctlId}/vall show J";
-            var dic = virtualDriveQueryCmds.ToDictionary();
-            dic.Add(ctlId, cmd);
-            virtualDriveQueryCmds = dic.ToFrozenDictionary();
-        }
-        return cmd;
-    }
+    public abstract Task CollectVirtualDriveMetrics(CancellationToken stoppingToken);
 
-    protected static int GetIntMetric(Utf8JsonReader reader)
-    {
-        reader.Read();
-        return reader.GetInt32();
-    }
-    
-    protected static int GetStringMetric(Utf8JsonReader reader)
-    {
-        reader.Read();
-        return StringStore.GetOrAdd(reader.ValueSpan);
-    }
-
-    protected static double ParseSize(Utf8JsonReader reader)
-    {
-        reader.Read();
-        var span = reader.ValueSpan;
-        if (Utf8Parser.TryParse(span, out double num, out var bytesConsumed))
-        {
-            ReadOnlySpan<byte> unitSpan = span[bytesConsumed..].Trim(" "u8);
-
-            if (unitSpan.SequenceEqual("KB"u8)) return num * KB;
-            if (unitSpan.SequenceEqual("MB"u8)) return num * MB;
-            if (unitSpan.SequenceEqual("GB"u8)) return num * GB;
-            if (unitSpan.SequenceEqual("TB"u8)) return num * TB;
-            if (unitSpan.SequenceEqual("PB"u8)) return num * PB;
-
-            return num;
-        }
-
-        return 0;
-    }
+    public void Update() => metricStore.UpdateSnapshot();
 
     protected async Task HandingControllers(Stream stream, CancellationToken stoppingToken)
     {
@@ -280,8 +241,52 @@ public abstract class PercCollector(PercMetricStore metricStore)
         }
         await pipeReader.CompleteAsync();
     }
+    
+    protected string GetVirtualDriveQueryCmd(int ctlId)
+    {
+        if (!virtualDriveQueryCmds.TryGetValue(ctlId, out var cmd))
+        {
+            cmd = $"sudo perccli64 /c{ctlId}/vall show J";
+            var dic = virtualDriveQueryCmds.ToDictionary();
+            dic.Add(ctlId, cmd);
+            virtualDriveQueryCmds = dic.ToFrozenDictionary();
+        }
+        return cmd;
+    }
 
-    protected static double ParseSectorSize(Utf8JsonReader reader)
+    private static int GetIntMetric(Utf8JsonReader reader)
+    {
+        reader.Read();
+        return reader.GetInt32();
+    }
+
+    private static int GetStringMetric(Utf8JsonReader reader)
+    {
+        reader.Read();
+        return StringStore.GetOrAdd(reader.ValueSpan);
+    }
+
+    private static double ParseSize(Utf8JsonReader reader)
+    {
+        reader.Read();
+        var span = reader.ValueSpan;
+        if (Utf8Parser.TryParse(span, out double num, out var bytesConsumed))
+        {
+            ReadOnlySpan<byte> unitSpan = span[bytesConsumed..].Trim(" "u8);
+
+            if (unitSpan.SequenceEqual("KB"u8)) return num * KB;
+            if (unitSpan.SequenceEqual("MB"u8)) return num * MB;
+            if (unitSpan.SequenceEqual("GB"u8)) return num * GB;
+            if (unitSpan.SequenceEqual("TB"u8)) return num * TB;
+            if (unitSpan.SequenceEqual("PB"u8)) return num * PB;
+
+            return num;
+        }
+
+        return 0;
+    }
+
+    private static double ParseSectorSize(Utf8JsonReader reader)
     {
         reader.Read();
         var span = reader.ValueSpan;
@@ -294,10 +299,4 @@ public abstract class PercCollector(PercMetricStore metricStore)
         }
         return 0;
     }
-    
-    public abstract Task CollectControllerMetrics(CancellationToken stoppingToken);
-
-    public abstract Task CollectVirtualDriveMetrics(CancellationToken stoppingToken);
-
-    public void Update() => metricStore.UpdateSnapshot();
 }
