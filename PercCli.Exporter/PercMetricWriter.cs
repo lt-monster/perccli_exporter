@@ -12,7 +12,14 @@ public sealed class PercMetricWriter(PercMetricStore metricStore)
     {
         var currentCtls = metricStore.Current.ControllerMetricStore;
 
-        if (currentCtls.Count == 0) return;
+        if (currentCtls.Count == 0)
+        {
+            writer.Write("# HELP perc_controller_count Total RAID controllers\n"u8);
+            writer.Write("# TYPE perc_controller_count gauge\n"u8);
+            writer.Write("perc_controller_count 0\n"u8);
+            writer.Write("# No controllers found\n"u8);
+            return;
+        }
         
         writer.Write("# HELP perc_controller_count Total RAID controllers\n"u8);
         writer.Write("# TYPE perc_controller_count gauge\n"u8);
