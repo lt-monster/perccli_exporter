@@ -16,7 +16,7 @@ builder.Services.AddSingleton<PercMetricWriter>();
 switch (percOptions.StartMode)
 {
     case StartMode.Process:
-        // builder.Services.AddSingleton<PercDataCollector, LocalPercDataCollector>();
+        builder.Services.AddSingleton<PercCollector, LocalPercCollector>();
         break;
     case StartMode.Ssh:
         if (string.IsNullOrWhiteSpace(percOptions.SshConfig?.Host) ||

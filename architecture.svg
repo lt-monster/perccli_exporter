@@ -1,4 +1,4 @@
-<svg width="1600" height="920" viewBox="0 0 1600 920" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<svg width="1600" height="980" viewBox="0 0 1600 980" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">perccli_exporter system architecture</title>
   <desc id="desc">System architecture diagram for perccli_exporter showing configuration, collectors, metric store, hosted service, and Prometheus metrics endpoint.</desc>
 
@@ -49,7 +49,7 @@
     </style>
   </defs>
 
-  <rect width="1600" height="920" fill="url(#bg)"/>
+  <rect width="1600" height="980" fill="url(#bg)"/>
 
   <text x="60" y="68" class="title">perccli_exporter Architecture</text>
   <text x="60" y="98" class="subtitle">.NET 10 / ASP.NET Core / Native AOT-ready Prometheus exporter for Dell PERC and MegaRAID metrics</text>
@@ -75,18 +75,18 @@
   <rect x="1080" y="190" width="430" height="80" rx="18" fill="url(#amber)" class="card"/>
   <text x="1100" y="220" class="boxTitle">Collector Selection by StartMode</text>
   <text x="1100" y="243" class="boxText">File - FilePercCollector</text>
-  <text x="1100" y="264" class="boxText">Ssh - SshPercCollector | Process - reserved placeholder</text>
+  <text x="1100" y="264" class="boxText">Ssh - SshPercCollector | Process - LocalPercCollector</text>
 
   <path d="M 320 230 L 360 230" class="line"/>
   <path d="M 640 230 L 690 230" class="line"/>
   <path d="M 1030 230 L 1080 230" class="line"/>
 
-  <rect x="40" y="330" width="1520" height="280" class="panel"/>
+  <rect x="40" y="330" width="1520" height="340" class="panel"/>
   <text x="65" y="365" class="section">2. Background Collection Pipeline</text>
 
-  <rect x="80" y="430" width="220" height="80" rx="18" fill="url(#blue)" class="card"/>
-  <text x="100" y="462" class="boxTitle">PercCollectService</text>
-  <text x="100" y="485" class="boxText">Timer-based execution</text>
+  <rect x="80" y="480" width="220" height="80" rx="18" fill="url(#blue)" class="card"/>
+  <text x="100" y="512" class="boxTitle">PercCollectService</text>
+  <text x="100" y="535" class="boxText">Timer-based execution</text>
 
   <rect x="380" y="380" width="260" height="80" rx="18" fill="url(#purple)" class="card"/>
   <text x="400" y="412" class="boxTitle">FilePercCollector</text>
@@ -96,43 +96,49 @@
   <text x="400" y="512" class="boxTitle">SshPercCollector</text>
   <text x="400" y="535" class="boxText">Runs remote perccli64 via SSH</text>
 
-  <rect x="740" y="430" width="260" height="80" rx="18" fill="#3f3f46" class="card"/>
-  <text x="760" y="462" class="boxTitle">Streaming JSON Parser</text>
-  <text x="760" y="485" class="boxText">Extracts Ctrl, VD, and PD metrics</text>
+  <rect x="380" y="580" width="260" height="80" rx="18" fill="url(#purple)" class="card"/>
+  <text x="400" y="612" class="boxTitle">LocalPercCollector</text>
+  <text x="400" y="635" class="boxText">Runs local perccli64 process</text>
 
-  <rect x="1100" y="430" width="300" height="80" rx="18" fill="url(#green)" class="card"/>
-  <text x="1120" y="462" class="boxTitle">Metric Snapshot Store</text>
-  <text x="1120" y="485" class="boxText">Atomically updates current metrics</text>
+  <rect x="740" y="480" width="260" height="80" rx="18" fill="#3f3f46" class="card"/>
+  <text x="760" y="512" class="boxTitle">Streaming JSON Parser</text>
+  <text x="760" y="535" class="boxText">Extracts Ctrl, VD, and PD metrics</text>
 
-  <path d="M 300 470 L 340 470 L 340 420 L 380 420" class="line"/>
-  <path d="M 340 470 L 340 520 L 380 520" class="line"/>
+  <rect x="1100" y="480" width="300" height="80" rx="18" fill="url(#green)" class="card"/>
+  <text x="1120" y="512" class="boxTitle">Metric Snapshot Store</text>
+  <text x="1120" y="535" class="boxText">Atomically updates current metrics</text>
+
+  <path d="M 300 520 L 340 520 L 340 420 L 380 420" class="line"/>
+  <path d="M 340 520 L 380 520" class="line"/>
+  <path d="M 340 520 L 340 620 L 380 620" class="line"/>
   
   <!-- Paths from Collectors to Parser (without intermediate arrows) -->
-  <path d="M 640 420 L 690 420 L 690 470" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
-  <path d="M 640 520 L 690 520 L 690 470" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
-  <path d="M 690 470 L 740 470" class="line"/>
+  <path d="M 640 420 L 690 420 L 690 520" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
+  <path d="M 640 520 L 690 520" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
+  <path d="M 640 620 L 690 620 L 690 520" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
+  <path d="M 690 520 L 740 520" class="line"/>
   
-  <path d="M 1000 470 L 1100 470" class="line"/>
+  <path d="M 1000 520 L 1100 520" class="line"/>
 
-  <rect x="40" y="640" width="1520" height="180" class="panel"/>
-  <text x="65" y="675" class="section">3. Metrics Exposure</text>
+  <rect x="40" y="700" width="1520" height="180" class="panel"/>
+  <text x="65" y="735" class="section">3. Metrics Exposure</text>
 
-  <rect x="80" y="700" width="320" height="80" rx="18" fill="url(#purple)" class="card"/>
-  <text x="100" y="732" class="boxTitle">ASP.NET Core Minimal API</text>
-  <text x="100" y="755" class="boxText">Exposes GET /metrics endpoint</text>
+  <rect x="80" y="760" width="320" height="80" rx="18" fill="url(#purple)" class="card"/>
+  <text x="100" y="792" class="boxTitle">ASP.NET Core Minimal API</text>
+  <text x="100" y="815" class="boxText">Exposes GET /metrics endpoint</text>
 
-  <rect x="480" y="700" width="360" height="80" rx="18" fill="url(#amber)" class="card"/>
-  <text x="500" y="732" class="boxTitle">PercMetricWriter</text>
-  <text x="500" y="755" class="boxText">Formats store data to Prometheus text</text>
+  <rect x="480" y="760" width="360" height="80" rx="18" fill="url(#amber)" class="card"/>
+  <text x="500" y="792" class="boxTitle">PercMetricWriter</text>
+  <text x="500" y="815" class="boxText">Formats store data to Prometheus text</text>
 
-  <rect x="920" y="700" width="320" height="80" rx="18" fill="url(#green)" class="card"/>
-  <text x="940" y="732" class="boxTitle">Prometheus Server</text>
-  <text x="940" y="755" class="boxText">Scrapes metrics for monitoring</text>
+  <rect x="920" y="760" width="320" height="80" rx="18" fill="url(#green)" class="card"/>
+  <text x="940" y="792" class="boxTitle">Prometheus Server</text>
+  <text x="940" y="815" class="boxText">Scrapes metrics for monitoring</text>
 
-  <path d="M 400 740 L 480 740" class="line"/>
-  <path d="M 840 740 L 920 740" class="line"/>
-  <path d="M 1250 510 L 1250 600 L 660 600 L 660 700" class="line"/>
+  <path d="M 400 800 L 480 800" class="line"/>
+  <path d="M 840 800 L 920 800" class="line"/>
+  <path d="M 1250 520 L 1250 660 L 660 660 L 660 760" class="line"/>
 
-  <text x="70" y="860" class="muted">Notes: StartMode.Process is reserved and not implemented in the current design.</text>
-  <text x="70" y="880" class="muted">Linux deployments typically need passwordless sudo authorization for perccli64.</text>
+  <text x="70" y="920" class="muted">Notes: StartMode supports File, Ssh, and Process(LocalPercCollector).</text>
+  <text x="70" y="940" class="muted">Linux deployments typically need passwordless sudo authorization for perccli64.</text>
 </svg>
