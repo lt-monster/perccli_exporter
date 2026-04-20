@@ -1,0 +1,138 @@
+<svg width="1600" height="920" viewBox="0 0 1600 920" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">perccli_exporter system architecture</title>
+  <desc id="desc">System architecture diagram for perccli_exporter showing configuration, collectors, metric store, hosted service, and Prometheus metrics endpoint.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#1f2937"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7.2" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 8 4 L 0 8 z" fill="#94a3b8"/>
+    </marker>
+    <style>
+      .title { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #f8fafc; }
+      .subtitle { font: 400 16px 'Segoe UI', Arial, sans-serif; fill: #cbd5e1; }
+      .section { font: 700 20px 'Segoe UI', Arial, sans-serif; fill: #e5e7eb; }
+      .boxTitle { font: 700 18px 'Segoe UI', Arial, sans-serif; fill: #f8fafc; }
+      .boxText { font: 400 14px 'Segoe UI', Arial, sans-serif; fill: #dbe4ee; }
+      .small { font: 400 13px 'Segoe UI', Arial, sans-serif; fill: #cbd5e1; }
+      .label { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #e2e8f0; }
+      .muted { font: 400 12px 'Segoe UI', Arial, sans-serif; fill: #94a3b8; }
+      .line { stroke: #94a3b8; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 10 8; }
+      .panel { fill: url(#panel); stroke: #334155; stroke-width: 1.5; rx: 24; }
+      .card { stroke: #475569; stroke-width: 1.5; rx: 18; filter: url(#shadow); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="920" fill="url(#bg)"/>
+
+  <text x="60" y="68" class="title">perccli_exporter Architecture</text>
+  <text x="60" y="98" class="subtitle">.NET 10 / ASP.NET Core / Native AOT-ready Prometheus exporter for Dell PERC and MegaRAID metrics</text>
+
+  <rect x="40" y="130" width="1520" height="170" class="panel"/>
+  <text x="65" y="165" class="section">1. Application Bootstrap</text>
+
+  <rect x="70" y="190" width="250" height="80" rx="18" fill="url(#blue)" class="card"/>
+  <text x="90" y="220" class="boxTitle">Program.cs</text>
+  <text x="90" y="243" class="boxText">CreateSlimBuilder(args)</text>
+  <text x="90" y="264" class="boxText">Build DI container and web app</text>
+
+  <rect x="360" y="190" width="280" height="80" rx="18" fill="url(#purple)" class="card"/>
+  <text x="380" y="220" class="boxTitle">PercCollectOptions</text>
+  <text x="380" y="243" class="boxText">Read from appsettings: PercOption</text>
+  <text x="380" y="264" class="boxText">StartMode / SshConfig / PollingInterval</text>
+
+  <rect x="690" y="190" width="340" height="80" rx="18" fill="url(#green)" class="card"/>
+  <text x="710" y="220" class="boxTitle">Dependency Injection</text>
+  <text x="710" y="243" class="boxText">Register PercMetricStore, PercMetricWriter,</text>
+  <text x="710" y="264" class="boxText">PercCollectService and selected PercCollector</text>
+
+  <rect x="1080" y="190" width="430" height="80" rx="18" fill="url(#amber)" class="card"/>
+  <text x="1100" y="220" class="boxTitle">Collector Selection by StartMode</text>
+  <text x="1100" y="243" class="boxText">File - FilePercCollector</text>
+  <text x="1100" y="264" class="boxText">Ssh - SshPercCollector | Process - reserved placeholder</text>
+
+  <path d="M 320 230 L 360 230" class="line"/>
+  <path d="M 640 230 L 690 230" class="line"/>
+  <path d="M 1030 230 L 1080 230" class="line"/>
+
+  <rect x="40" y="330" width="1520" height="280" class="panel"/>
+  <text x="65" y="365" class="section">2. Background Collection Pipeline</text>
+
+  <rect x="80" y="430" width="220" height="80" rx="18" fill="url(#blue)" class="card"/>
+  <text x="100" y="462" class="boxTitle">PercCollectService</text>
+  <text x="100" y="485" class="boxText">Timer-based execution</text>
+
+  <rect x="380" y="380" width="260" height="80" rx="18" fill="url(#purple)" class="card"/>
+  <text x="400" y="412" class="boxTitle">FilePercCollector</text>
+  <text x="400" y="435" class="boxText">Reads local .json files</text>
+
+  <rect x="380" y="480" width="260" height="80" rx="18" fill="url(#purple)" class="card"/>
+  <text x="400" y="512" class="boxTitle">SshPercCollector</text>
+  <text x="400" y="535" class="boxText">Runs remote perccli64 via SSH</text>
+
+  <rect x="740" y="430" width="260" height="80" rx="18" fill="#3f3f46" class="card"/>
+  <text x="760" y="462" class="boxTitle">Streaming JSON Parser</text>
+  <text x="760" y="485" class="boxText">Extracts Ctrl, VD, and PD metrics</text>
+
+  <rect x="1100" y="430" width="300" height="80" rx="18" fill="url(#green)" class="card"/>
+  <text x="1120" y="462" class="boxTitle">Metric Snapshot Store</text>
+  <text x="1120" y="485" class="boxText">Atomically updates current metrics</text>
+
+  <path d="M 300 470 L 340 470 L 340 420 L 380 420" class="line"/>
+  <path d="M 340 470 L 340 520 L 380 520" class="line"/>
+  
+  <!-- Paths from Collectors to Parser (without intermediate arrows) -->
+  <path d="M 640 420 L 690 420 L 690 470" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
+  <path d="M 640 520 L 690 520 L 690 470" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
+  <path d="M 690 470 L 740 470" class="line"/>
+  
+  <path d="M 1000 470 L 1100 470" class="line"/>
+
+  <rect x="40" y="640" width="1520" height="180" class="panel"/>
+  <text x="65" y="675" class="section">3. Metrics Exposure</text>
+
+  <rect x="80" y="700" width="320" height="80" rx="18" fill="url(#purple)" class="card"/>
+  <text x="100" y="732" class="boxTitle">ASP.NET Core Minimal API</text>
+  <text x="100" y="755" class="boxText">Exposes GET /metrics endpoint</text>
+
+  <rect x="480" y="700" width="360" height="80" rx="18" fill="url(#amber)" class="card"/>
+  <text x="500" y="732" class="boxTitle">PercMetricWriter</text>
+  <text x="500" y="755" class="boxText">Formats store data to Prometheus text</text>
+
+  <rect x="920" y="700" width="320" height="80" rx="18" fill="url(#green)" class="card"/>
+  <text x="940" y="732" class="boxTitle">Prometheus Server</text>
+  <text x="940" y="755" class="boxText">Scrapes metrics for monitoring</text>
+
+  <path d="M 400 740 L 480 740" class="line"/>
+  <path d="M 840 740 L 920 740" class="line"/>
+  <path d="M 1250 510 L 1250 600 L 660 600 L 660 700" class="line"/>
+
+  <text x="70" y="860" class="muted">Notes: StartMode.Process is reserved and not implemented in the current design.</text>
+  <text x="70" y="880" class="muted">Linux deployments typically need passwordless sudo authorization for perccli64.</text>
+</svg>

@@ -6,6 +6,9 @@
 - A lightweight Prometheus exporter that exposes Dell PERC / MegaRAID status by parsing `perccli64` JSON output.
 - Provides `/metrics` for Prometheus scraping (text format `version=0.0.4`).
 
+## 🏗️ Architecture
+![perccli_exporter architecture](architecture.svg)
+
 ## ✨ Features
 - Controller-level metrics (count, model metadata, health, BBU, patrol read, ports, PD/VD stats).
 - Virtual drive (VD) metrics (metadata, state, consistency, scheduled CC, size).

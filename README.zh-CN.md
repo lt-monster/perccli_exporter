@@ -6,6 +6,9 @@
 - 一个轻量级 Prometheus Exporter，通过解析 `perccli64` 的 JSON 输出，暴露 Dell PERC / MegaRAID 的状态指标。
 - 提供 `/metrics` 供 Prometheus 抓取（文本格式 `version=0.0.4`）。
 
+## 🏗️ 架构图
+![perccli_exporter 架构图](architecture.svg)
+
 ## ✨ 功能特性
 - 控制器（Controller）级别指标：数量、型号元信息、健康状态、BBU、电巡检、端口数、PD/VD 统计等。
 - 虚拟盘（VD/RAID 卷）指标：元信息、状态、一致性、计划一致性检查、容量等。
