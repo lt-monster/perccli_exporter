@@ -1,5 +1,6 @@
 .vs
 .idea
+.vscode
 .claude
 .trae
 *.user
