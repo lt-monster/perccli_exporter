@@ -3,7 +3,7 @@ using PercCli.Exporter.Stores;
 
 namespace PercCli.Exporter.Metrics;
 
-public sealed class VirtualDriveMetric
+public sealed class VirtualDriveMetric: IComparable<VirtualDriveMetric?>
 {
     public int CtlId { get; set; }
     public int Dg { get; set; }
@@ -72,5 +72,14 @@ public sealed class VirtualDriveMetric
             // 未知 → 2
             _ => 2
         };
+    }
+
+    public int CompareTo(VirtualDriveMetric? other)
+    {
+        if (ReferenceEquals(this, other)) return 0;
+        if (other is null) return 1;
+        var ctlIdComparison = CtlId.CompareTo(other.CtlId);
+        if (ctlIdComparison != 0) return ctlIdComparison;
+        return Dg.CompareTo(other.Dg);
     }
 }
