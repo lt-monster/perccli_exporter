@@ -16,7 +16,8 @@ public abstract class PercCollector(PercMetricStore metricStore)
     private const double TB = 1024.0 * GB;
     private const double PB = 1024.0 * TB;
     
-    protected const string CMD_CONTROLLERS = "sudo perccli64 show J";
+    protected const string CMD_CONTROLLERS = "perccli64 show J";
+    protected const string CMD_CONTROLLERS_SUOD = "sudo perccli64 show J";
 
     private FrozenDictionary<int, string> virtualDriveQueryCmds = FrozenDictionary<int, string>.Empty;
 

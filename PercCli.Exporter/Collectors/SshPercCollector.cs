@@ -22,7 +22,7 @@ public sealed class SshPercCollector(PercCollectOptions collOpts, PercMetricStor
                 await sshClient.ConnectAsync(stoppingToken);
             }
             
-            using var sshCommand = sshClient.CreateCommand(CMD_CONTROLLERS);
+            using var sshCommand = sshClient.CreateCommand(CMD_CONTROLLERS_SUOD);
             var asyncResult = sshCommand.BeginExecute();
 
             await HandingControllers(sshCommand.OutputStream, stoppingToken);

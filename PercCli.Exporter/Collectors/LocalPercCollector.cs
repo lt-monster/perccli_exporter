@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using PercCli.Exporter.Stores;
 
 namespace PercCli.Exporter.Collectors;
@@ -15,7 +16,7 @@ public sealed class LocalPercCollector(PercMetricStore metricStore) : PercCollec
             Arguments = parts.Length > 1 ? parts[1] : string.Empty,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            UseShellExecute = true,
+            UseShellExecute = false,
             CreateNoWindow = false,
         };
         process.Start();
@@ -33,7 +34,8 @@ public sealed class LocalPercCollector(PercMetricStore metricStore) : PercCollec
     {
         try
         {
-            await RunCommand(CMD_CONTROLLERS, s => HandingControllers(s, stoppingToken), stoppingToken);
+            var cmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? CMD_CONTROLLERS : CMD_CONTROLLERS_SUOD;
+            await RunCommand(cmd, s => HandingControllers(s, stoppingToken), stoppingToken);
         }
         catch (Exception ex)
         {
