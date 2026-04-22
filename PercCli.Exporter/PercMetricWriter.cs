@@ -257,6 +257,7 @@ public sealed class PercMetricWriter(PercMetricStore metricStore)
         writer.Write(consistBuffer.WrittenSpan);
         writer.Write(sccBuffer.WrittenSpan);
         writer.Write(sizeBuffer.WrittenSpan);
+        writer.Write(activeOperationsBuffer.WrittenSpan);
     }
 
     public void WritePhysicalDriveMetrics(PipeWriter writer)

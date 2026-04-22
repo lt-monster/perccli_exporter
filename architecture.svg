@@ -65,17 +65,17 @@
   <rect x="360" y="190" width="280" height="80" rx="18" fill="url(#purple)" class="card"/>
   <text x="380" y="220" class="boxTitle">PercCollectOptions</text>
   <text x="380" y="243" class="boxText">Read from appsettings: PercOption</text>
-  <text x="380" y="264" class="boxText">StartMode / SshConfig / PollingInterval</text>
+  <text x="380" y="264" class="boxText">PollingInterval</text>
 
   <rect x="690" y="190" width="340" height="80" rx="18" fill="url(#green)" class="card"/>
   <text x="710" y="220" class="boxTitle">Dependency Injection</text>
   <text x="710" y="243" class="boxText">Register PercMetricStore, PercMetricWriter,</text>
-  <text x="710" y="264" class="boxText">PercCollectService and selected PercCollector</text>
+  <text x="710" y="264" class="boxText">PercCollectService and LocalPercCollector</text>
 
   <rect x="1080" y="190" width="430" height="80" rx="18" fill="url(#amber)" class="card"/>
-  <text x="1100" y="220" class="boxTitle">Collector Selection by StartMode</text>
-  <text x="1100" y="243" class="boxText">File - FilePercCollector</text>
-  <text x="1100" y="264" class="boxText">Ssh - SshPercCollector | Process - LocalPercCollector</text>
+  <text x="1100" y="220" class="boxTitle">Collector</text>
+  <text x="1100" y="243" class="boxText">LocalPercCollector</text>
+  <text x="1100" y="264" class="boxText">Runs perccli64 locally (Linux uses sudo)</text>
 
   <path d="M 320 230 L 360 230" class="line"/>
   <path d="M 640 230 L 690 230" class="line"/>
@@ -89,16 +89,16 @@
   <text x="100" y="535" class="boxText">Timer-based execution</text>
 
   <rect x="380" y="380" width="260" height="80" rx="18" fill="url(#purple)" class="card"/>
-  <text x="400" y="412" class="boxTitle">FilePercCollector</text>
-  <text x="400" y="435" class="boxText">Reads local .json files</text>
+  <text x="400" y="412" class="boxTitle">Controller Query</text>
+  <text x="400" y="435" class="boxText">perccli64 show J (Linux: sudo perccli64)</text>
 
   <rect x="380" y="480" width="260" height="80" rx="18" fill="url(#purple)" class="card"/>
-  <text x="400" y="512" class="boxTitle">SshPercCollector</text>
-  <text x="400" y="535" class="boxText">Runs remote perccli64 via SSH</text>
+  <text x="400" y="512" class="boxTitle">VD/PD Query</text>
+  <text x="400" y="535" class="boxText">perccli64 /c{ctl}/vall show all J</text>
 
   <rect x="380" y="580" width="260" height="80" rx="18" fill="url(#purple)" class="card"/>
-  <text x="400" y="612" class="boxTitle">LocalPercCollector</text>
-  <text x="400" y="635" class="boxText">Runs local perccli64 process</text>
+  <text x="400" y="612" class="boxTitle">Snapshot Update</text>
+  <text x="400" y="635" class="boxText">MetricStore.UpdateSnapshot()</text>
 
   <rect x="740" y="480" width="260" height="80" rx="18" fill="#3f3f46" class="card"/>
   <text x="760" y="512" class="boxTitle">Streaming JSON Parser</text>
@@ -139,6 +139,6 @@
   <path d="M 840 800 L 920 800" class="line"/>
   <path d="M 1250 520 L 1250 660 L 660 660 L 660 760" class="line"/>
 
-  <text x="70" y="920" class="muted">Notes: StartMode supports File, Ssh, and Process(LocalPercCollector).</text>
-  <text x="70" y="940" class="muted">Linux deployments typically need passwordless sudo authorization for perccli64.</text>
+  <text x="70" y="920" class="muted">Notes: Collector runs perccli64 locally. Linux deployments typically need passwordless sudo.</text>
+  <text x="70" y="940" class="muted">Default listen address: http://*:9917</text>
 </svg>

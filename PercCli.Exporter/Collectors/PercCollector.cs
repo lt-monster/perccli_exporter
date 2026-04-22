@@ -1,6 +1,7 @@
 ﻿using System.Buffers.Text;
 using System.Collections.Frozen;
 using System.IO.Pipelines;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using PercCli.Exporter.Metrics;
 using PercCli.Exporter.Stores;
@@ -15,11 +16,8 @@ public abstract class PercCollector(PercMetricStore metricStore)
     private const double GB = 1024.0 * MB;
     private const double TB = 1024.0 * GB;
     private const double PB = 1024.0 * TB;
-    
-    protected const string CMD_CONTROLLERS = "perccli64 show J";
-    protected const string CMD_CONTROLLERS_SUOD = "sudo perccli64 show J";
 
-    private FrozenDictionary<int, string> virtualDriveQueryCmds = FrozenDictionary<int, string>.Empty;
+    private FrozenDictionary<int, (string, string)> virtualDriveQueryCmds = FrozenDictionary<int, (string, string)>.Empty;
 
     protected PercMetricStore MetricStore => metricStore;
     public abstract Task CollectControllerMetrics(CancellationToken stoppingToken);
@@ -243,11 +241,13 @@ public abstract class PercCollector(PercMetricStore metricStore)
         await pipeReader.CompleteAsync();
     }
     
-    protected string GetVirtualDriveQueryCmd(int ctlId)
+    protected (string,string) GetVirtualDriveQueryCmd(int ctlId)
     {
         if (!virtualDriveQueryCmds.TryGetValue(ctlId, out var cmd))
         {
-            cmd = $"sudo perccli64 /c{ctlId}/vall show J";
+            cmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+                ? ($"perccli64", $"/c{ctlId}/vall show all J") 
+                : ($"sudo", $"perccli64 /c{ctlId}/vall show all J");
             var dic = virtualDriveQueryCmds.ToDictionary();
             dic.Add(ctlId, cmd);
             virtualDriveQueryCmds = dic.ToFrozenDictionary();

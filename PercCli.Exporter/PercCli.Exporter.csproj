@@ -25,7 +25,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="SSH.NET" Version="2025.1.0" />
+      <_ContentIncludedByDefault Remove="Data\control.json" />
+      <_ContentIncludedByDefault Remove="Data\vd-list-info.json" />
+      <_ContentIncludedByDefault Remove="Data\vd-list.json" />
     </ItemGroup>
 
 </Project>

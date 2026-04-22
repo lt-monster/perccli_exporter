@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="PercCli.Exporter.Tests/PercCli.Exporter.Tests.csproj" />
   <Project Path="PercCli.Exporter/PercCli.Exporter.csproj" />
 </Solution>

@@ -6,14 +6,13 @@ namespace PercCli.Exporter.Collectors;
 
 public sealed class LocalPercCollector(PercMetricStore metricStore) : PercCollector(metricStore)
 {
-    private static async Task RunCommand(string arguments, Func<Stream, Task> handler, CancellationToken stoppingToken)
+    private static async Task RunCommand(string filename, string arguments, Func<Stream, Task> handler, CancellationToken stoppingToken)
     {
-        var parts = arguments.Split(' ', 2);
         using var process = new Process();
         process.StartInfo = new ProcessStartInfo
         {
-            FileName = parts[0],
-            Arguments = parts.Length > 1 ? parts[1] : string.Empty,
+            FileName = filename,
+            Arguments = arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -34,8 +33,14 @@ public sealed class LocalPercCollector(PercMetricStore metricStore) : PercCollec
     {
         try
         {
-            var cmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? CMD_CONTROLLERS : CMD_CONTROLLERS_SUOD;
-            await RunCommand(cmd, s => HandingControllers(s, stoppingToken), stoppingToken);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                await RunCommand("perccli64", "show J", stream => HandingControllers(stream, stoppingToken), stoppingToken);
+            }
+            else
+            {
+                await RunCommand("sudo", "perccli64 show J", stream => HandingControllers(stream, stoppingToken), stoppingToken);
+            }
         }
         catch (Exception ex)
         {
@@ -54,8 +59,8 @@ public sealed class LocalPercCollector(PercMetricStore metricStore) : PercCollec
 
             try
             {
-                var cmd = GetVirtualDriveQueryCmd(ctl.Ctl);
-                await RunCommand(cmd, s => HandingVirtualDrives(s, ctl.Ctl, stoppingToken), stoppingToken);
+                var (filename, args) = GetVirtualDriveQueryCmd(ctl.Ctl);
+                await RunCommand(filename, args, s => HandingVirtualDrives(s, ctl.Ctl, stoppingToken), stoppingToken);
             }
             catch (Exception ex)
             {

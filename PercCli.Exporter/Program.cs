@@ -1,41 +1,73 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Microsoft.AspNetCore.Hosting;
 using PercCli.Exporter;
 using PercCli.Exporter.Collectors;
 using PercCli.Exporter.Stores;
 
+if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+    Console.WriteLine("perccli_exporter is only supported on Windows and Linux.");
+    return;
+}
+
 var stopwatch = Stopwatch.StartNew();
 
+static bool HasUrlsOverride(string[] args)
+{
+    if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS"))) return true;
+
+    for (var i = 0; i < args.Length; i++)
+    {
+        var a = args[i];
+        if (a.Equals("--urls", StringComparison.OrdinalIgnoreCase)) return true;
+        if (a.StartsWith("--urls=", StringComparison.OrdinalIgnoreCase)) return true;
+    }
+
+    return false;
+}
+
+static int? GetPortOverride(string[] args)
+{
+    for (var i = 0; i < args.Length; i++)
+    {
+        var a = args[i];
+
+        if (a.StartsWith("--port=", StringComparison.OrdinalIgnoreCase))
+        {
+            var v = a["--port=".Length..];
+            if (int.TryParse(v, out var p) && p is > 0 and < 65536) return p;
+        }
+
+        if (a.Equals("--port", StringComparison.OrdinalIgnoreCase) || a.Equals("-p", StringComparison.OrdinalIgnoreCase))
+        {
+            if (i + 1 < args.Length && int.TryParse(args[i + 1], out var p) && p is > 0 and < 65536) return p;
+        }
+    }
+
+    var env = Environment.GetEnvironmentVariable("PERC_EXPORTER_PORT") ?? Environment.GetEnvironmentVariable("PORT");
+    if (int.TryParse(env, out var envPort) && envPort is > 0 and < 65536) return envPort;
+
+    return null;
+}
+
 var builder = WebApplication.CreateSlimBuilder(args);
+
+if (!HasUrlsOverride(args))
+{
+    var port = GetPortOverride(args);
+    if (port is not null)
+    {
+        builder.WebHost.UseUrls($"http://*:{port.Value}");
+    }
+}
 
 var percOptions = builder.Configuration.GetSection("PercOption").Get<PercCollectOptions>() ?? new();
 builder.Services.AddSingleton(percOptions);
 
 builder.Services.AddSingleton<PercMetricStore>();
 builder.Services.AddSingleton<PercMetricWriter>();
-
-switch (percOptions.StartMode)
-{
-    case StartMode.Process:
-        builder.Services.AddSingleton<PercCollector, LocalPercCollector>();
-        break;
-    case StartMode.Ssh:
-        if (string.IsNullOrWhiteSpace(percOptions.SshConfig?.Host) ||
-            string.IsNullOrWhiteSpace(percOptions.SshConfig?.Username) ||
-            string.IsNullOrWhiteSpace(percOptions.SshConfig?.Password))
-        {
-            Console.WriteLine("The mode used is SSH. \"Host\", \"Username\" and \"Password\" cannot be left blank.");
-            return;
-        }
-        builder.Services.AddSingleton<PercCollector, SshPercCollector>();
-        break;
-    case StartMode.File:
-        builder.Services.AddSingleton<PercCollector, FilePercCollector>();
-        break;
-    default: 
-        Console.WriteLine($"Unknown StartMode: {percOptions.StartMode}");
-        return;
-}
-
+builder.Services.AddSingleton<PercCollector, LocalPercCollector>();
 builder.Services.AddHostedService<PercCollectService>();
 
 var app = builder.Build();
