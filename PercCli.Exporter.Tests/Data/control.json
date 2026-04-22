@@ -1,0 +1,36 @@
+{
+  "Controllers": [
+    {
+      "Command Status": {
+        "CLI Version": "007.2616.0000.0000 Dec 06, 2023",
+        "Operating system": "Linux 5.4.0-216-generic",
+        "Status Code": 0,
+        "Status": "Success",
+        "Description": "None"
+      },
+      "Response Data": {
+        "Number of Controllers": 1,
+        "Host Name": "live42p-a",
+        "Operating System ": "Linux 5.4.0-216-generic",
+        "System Overview": [
+          {
+            "Ctl": 0,
+            "Model": "PERCH730PAdapter",
+            "Ports": 8,
+            "PDs": 9,
+            "DGs": 6,
+            "DNOpt": 0,
+            "VDs": 6,
+            "VNOpt": 0,
+            "BBU": "Opt",
+            "sPR": "On",
+            "DS": "3",
+            "EHS": "N",
+            "ASOs": 0,
+            "Hlth": "Opt"
+          }
+        ]
+      }
+    }
+  ]
+}
