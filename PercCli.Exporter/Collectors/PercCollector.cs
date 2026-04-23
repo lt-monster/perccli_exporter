@@ -9,7 +9,7 @@ using PercCli.Exporter.Stores;
 namespace PercCli.Exporter.Collectors;
 
 //采集器
-public abstract class PercCollector(PercMetricStore metricStore)
+public abstract class PercCollector(PercMetricStore metricStore, PercCollectOptions percOptions)
 {
     private const double KB = 1024.0;
     private const double MB = 1024.0 * KB;
@@ -20,11 +20,19 @@ public abstract class PercCollector(PercMetricStore metricStore)
     private FrozenDictionary<int, (string, string)> virtualDriveQueryCmds = FrozenDictionary<int, (string, string)>.Empty;
 
     protected PercMetricStore MetricStore => metricStore;
+    
+    protected PercCollectOptions PercOptions => percOptions;
+    
     public abstract Task CollectControllerMetrics(CancellationToken stoppingToken);
 
     public abstract Task CollectVirtualDriveMetrics(CancellationToken stoppingToken);
 
     public void Update() => metricStore.UpdateSnapshot();
+
+    public (int ctlCount, int vdCount, int pdCount) GetCount()
+        => (MetricStore.Current.ControllerMetricStore.Count,
+            MetricStore.Current.VirtualDriveMetricStore.Count,
+            MetricStore.Current.PhysicalDriveMetricStore.Count);
 
     protected async Task HandingControllers(Stream stream, CancellationToken stoppingToken)
     {
@@ -245,7 +253,9 @@ public abstract class PercCollector(PercMetricStore metricStore)
     {
         if (!virtualDriveQueryCmds.TryGetValue(ctlId, out var cmd))
         {
-            cmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+            var isRoot = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && percOptions.IsRoot;
+            
+            cmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || isRoot
                 ? ($"perccli64", $"/c{ctlId}/vall show all J") 
                 : ($"sudo", $"perccli64 /c{ctlId}/vall show all J");
             var dic = virtualDriveQueryCmds.ToDictionary();
