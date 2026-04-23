@@ -1,9 +1,16 @@
-﻿FROM 172.16.136.77:10003/ubuntu:24.04 AS base
-#USER $APP_UID
+﻿FROM mcr.microsoft.com/dotnet/runtime-deps:10.0 AS base
+USER root
 WORKDIR /app
-EXPOSE 5000
+EXPOSE 9917
 
-FROM perccli_exporter:build AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+RUN apk update && apk add \
+    bash \
+    clang \
+    build-base \
+    zlib-dev \
+    icu-dev \
+    linux-headers
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["./PercCli.Exporter.csproj", "."]
@@ -19,4 +26,5 @@ FROM base AS final
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 WORKDIR /app
 COPY --from=publish /app/publish .
-#ENTRYPOINT ["./perccli_exporter"]
+COPY ./Tools/perccli64 /app/perccli64
+ENTRYPOINT ["./perccli_exporter"]
