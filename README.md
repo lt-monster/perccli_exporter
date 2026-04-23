@@ -2,13 +2,14 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Prometheus exporter for Dell PERC / MegaRAID, implemented in .NET 10 and exposing RAID health via `perccli64` JSON output.
+Prometheus exporter for Dell PERC / MegaRAID, built with .NET 10 (Native AOT ready), that exposes RAID health via `perccli64` JSON output.
 
 ## ✨ Features
 - Exposes `GET /metrics` in Prometheus text format (`version=0.0.4`).
-- Periodically polls controller / virtual drive / physical drive data.
-- Works on Windows and Linux.
-- Native AOT ready (self-contained publishing enabled in the project file).
+- Polls controller / virtual drive / physical drive data periodically.
+- Runs on Windows and Linux.
+- Local collection only (SSH/File collectors have been removed).
+- Supports port override via command line and environment variables.
 
 ## 🏗️ Architecture
 ![perccli_exporter architecture](architecture.svg)
@@ -17,65 +18,8 @@ Prometheus exporter for Dell PERC / MegaRAID, implemented in .NET 10 and exposin
 - `perccli64` must be installed and available in `PATH`.
 - Linux: the exporter needs permission to run `perccli64` (typically via `sudo`).
 
-## 🚀 Run
-- Default endpoint: `http://localhost:9917/metrics`
-- You can override the listen port via command line or environment variables.
-
-### Command line
-Linux:
-
-```bash
-./perccli_exporter --port 9917
-```
-
-Or use `-p`:
-
-```bash
-./perccli_exporter -p 9917
-```
-
-Windows:
-
-```powershell
-.\perccli_exporter.exe --port 9917
-```
-
-Or use `-p`:
-
-```powershell
-.\perccli_exporter.exe -p 9917
-```
-
-### Environment variables
-Supported variables:
-- `PERC_EXPORTER_PORT`
-- `PORT`
-
-Example (PowerShell):
-
-```powershell
-$env:PERC_EXPORTER_PORT="9917"
-.\perccli_exporter.exe
-```
-
-### Full URL override (ASP.NET Core standard)
-If you need to bind to a specific address (or multiple URLs), use `ASPNETCORE_URLS` or `--urls`.
-When `ASPNETCORE_URLS`/`--urls` is set, `--port` is ignored.
-
-Linux:
-
-```bash
-export ASPNETCORE_URLS="http://*:9917"
-./perccli_exporter
-```
-
-```powershell
-$env:ASPNETCORE_URLS="http://*:9917"
-.\perccli_exporter.exe
-```
-
 ## ⚙️ Configuration
-Configuration section: `PercOption`
+Default config file: `appsettings.json` (same directory as the executable / current working directory).
 
 ```json
 {
@@ -86,8 +30,94 @@ Configuration section: `PercOption`
 }
 ```
 
-- `Urls`: Kestrel listen address.
+- `Urls`: listen address for `/metrics`.
 - `PercOption:PollingInterval`: polling interval in seconds.
+
+## 🚀 Run
+- Default endpoint: `http://localhost:9917/metrics`
+
+### Windows
+Run:
+
+```powershell
+.\perccli_exporter.exe
+```
+
+Override port:
+
+```powershell
+.\perccli_exporter.exe -p 9917
+```
+
+Environment variable:
+
+```powershell
+$env:PERC_EXPORTER_PORT="9917"
+.\perccli_exporter.exe
+```
+
+Full URL override:
+
+```powershell
+$env:ASPNETCORE_URLS="http://*:9917"
+.\perccli_exporter.exe
+```
+
+### Linux
+Run:
+
+```bash
+./perccli_exporter
+```
+
+Override port:
+
+```bash
+./perccli_exporter -p 9917
+```
+
+Environment variable:
+
+```bash
+export PERC_EXPORTER_PORT=9917
+./perccli_exporter
+```
+
+Full URL override:
+
+```bash
+export ASPNETCORE_URLS="http://*:9917"
+./perccli_exporter
+```
+
+### Container (Docker)
+Docker Hub: https://hub.docker.com/r/1023785565/perccli_exporter  
+Example tag: `1023785565/perccli_exporter:v1.0.0`
+
+```bash
+docker pull 1023785565/perccli_exporter:v1.0.0
+docker run --rm -p 9917:9917 1023785565/perccli_exporter:v1.0.0
+```
+
+Change listen port:
+
+```bash
+docker run --rm -p 9999:9999 1023785565/perccli_exporter:v1.0.0 --port 9999
+```
+
+Notes:
+- The container includes `perccli64` and runs as `root` by default.
+
+### Port override precedence
+- Highest: `ASPNETCORE_URLS` / `--urls` (ASP.NET Core standard).
+- Then: `--port` / `-p`.
+- Then: `PERC_EXPORTER_PORT` / `PORT`.
+- Finally: `Urls` in `appsettings.json`.
+
+## 🧱 How It Works
+- Runs `perccli64 show J` to discover controllers.
+- For each controller, runs `perccli64 /c{ctl}/vall show all J` to collect VD/PD information.
+- On Linux, the collector invokes `sudo perccli64 ...`.
 
 ## 📈 Metrics
 ### Controller
@@ -96,8 +126,8 @@ Configuration section: `PercOption`
 | `perc_controller_count` | - | Total RAID controllers |
 | `perc_controller_info` | `ctl`, `model` | Controller metadata (value is always 1) |
 | `perccli_controller_health_status` | `ctl` | Overall health (1=Optimal, 0=other) |
-| `perccli_bbu_status` | `ctl` | BBU status (implementation-specific enum mapping) |
-| `perccli_patrol_read_status` | `ctl` | Scheduled Patrol Read status (implementation-specific enum mapping) |
+| `perccli_bbu_status` | `ctl` | BBU status (implementation-specific mapping) |
+| `perccli_patrol_read_status` | `ctl` | Scheduled Patrol Read status (implementation-specific mapping) |
 | `perccli_emergency_hot_spare_status` | `ctl` | Emergency Hot Spare (EHS) policy (1=enabled, 0=disabled) |
 | `perccli_ports_total` | `ctl` | Total physical ports on the controller |
 | `perccli_physical_drives_total` | `ctl` | Total physical drives (PD) detected |
@@ -122,7 +152,7 @@ Configuration section: `PercOption`
 | Metric | Labels | Description |
 | --- | --- | --- |
 | `perccli_physical_drive_info` | `ctl`, `vd`, `eid`, `slt`, `did`, `dg`, `intf`, `med`, `model`, `type`, `sed`, `pi` | PD metadata (value is always 1) |
-| `perccli_physical_drive_state` | `ctl`, `vd`, `eid`, `slt` | State (1=Onln, 2=Offln, 3=Rbld, 4=GHS, 5=UGood, 0=other) |
+| `perccli_physical_drive_state` | `ctl`, `vd`, `eid`, `slt` | State (implementation-specific mapping) |
 | `perccli_physical_drive_size_bytes` | `ctl`, `vd`, `eid`, `slt` | Size in bytes |
 | `perccli_physical_drive_sector_size_bytes` | `ctl`, `vd`, `eid`, `slt` | Sector size in bytes |
 | `perccli_physical_drive_sp_status` | `ctl`, `vd`, `eid`, `slt` | Spare status (0=not spare, 1=HS dedicated, 2=PS global) |

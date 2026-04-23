@@ -2,13 +2,14 @@
 
 [简体中文](README.zh-CN.md) | [English](README.md)
 
-一个用于 Dell PERC / MegaRAID 的 Prometheus Exporter，基于 .NET 10，通过解析 `perccli64` 的 JSON 输出暴露 RAID 健康指标。
+一个用于 Dell PERC / MegaRAID 的 Prometheus Exporter，基于 .NET 10（支持 Native AOT / 自包含发布），通过解析 `perccli64` 的 JSON 输出暴露 RAID 健康指标。
 
 ## ✨ 功能特性
 - 提供 `GET /metrics`（Prometheus 文本格式 `version=0.0.4`）。
 - 后台定时轮询采集：控制器 / 虚拟盘（VD）/ 物理盘（PD）。
 - 支持 Windows 与 Linux。
-- 项目已开启 Native AOT（自包含发布）。
+- 仅支持本地采集（已移除 SSH / File 采集）。
+- 支持命令行与环境变量覆盖端口。
 
 ## 🏗️ 架构图
 ![perccli_exporter 架构图](architecture.svg)
@@ -17,65 +18,8 @@
 - 需要安装 `perccli64`，并确保在 `PATH` 中可直接执行。
 - Linux 下通常需要 `sudo` 执行 `perccli64`（或以 root 运行 exporter）。
 
-## 🚀 运行
-- 默认地址：`http://localhost:9917/metrics`
-- 支持通过命令行参数或环境变量覆盖端口。
-
-### 命令行参数
-Linux：
-
-```bash
-./perccli_exporter --port 9917
-```
-
-或使用 `-p`：
-
-```bash
-./perccli_exporter -p 9917
-```
-
-Windows：
-
-```powershell
-.\perccli_exporter.exe --port 9917
-```
-
-或使用 `-p`：
-
-```powershell
-.\perccli_exporter.exe -p 9917
-```
-
-### 环境变量
-支持的环境变量：
-- `PERC_EXPORTER_PORT`
-- `PORT`
-
-PowerShell 示例：
-
-```powershell
-$env:PERC_EXPORTER_PORT="9917"
-.\perccli_exporter.exe
-```
-
-### 完整 URL 覆盖（ASP.NET Core 标准方式）
-如需绑定特定地址（或多个 URL），可使用 `ASPNETCORE_URLS` 或 `--urls`。
-当设置了 `ASPNETCORE_URLS`/`--urls` 时，`--port` 会被忽略。
-
-Linux：
-
-```bash
-export ASPNETCORE_URLS="http://*:9917"
-./perccli_exporter
-```
-
-```powershell
-$env:ASPNETCORE_URLS="http://*:9917"
-.\perccli_exporter.exe
-```
-
 ## ⚙️ 配置说明
-配置节点：`PercOption`
+默认配置文件：`appsettings.json`（与程序同目录或当前工作目录）。
 
 ```json
 {
@@ -86,8 +30,94 @@ $env:ASPNETCORE_URLS="http://*:9917"
 }
 ```
 
-- `Urls`：Kestrel 监听地址。
+- `Urls`：`/metrics` 的监听地址。
 - `PercOption:PollingInterval`：采集间隔（秒）。
+
+## 🚀 运行
+- 默认地址：`http://localhost:9917/metrics`
+
+### Windows
+运行：
+
+```powershell
+.\perccli_exporter.exe
+```
+
+覆盖端口：
+
+```powershell
+.\perccli_exporter.exe -p 9917
+```
+
+环境变量：
+
+```powershell
+$env:PERC_EXPORTER_PORT="9917"
+.\perccli_exporter.exe
+```
+
+完整 URL 覆盖：
+
+```powershell
+$env:ASPNETCORE_URLS="http://*:9917"
+.\perccli_exporter.exe
+```
+
+### Linux
+运行：
+
+```bash
+./perccli_exporter
+```
+
+覆盖端口：
+
+```bash
+./perccli_exporter -p 9917
+```
+
+环境变量：
+
+```bash
+export PERC_EXPORTER_PORT=9917
+./perccli_exporter
+```
+
+完整 URL 覆盖：
+
+```bash
+export ASPNETCORE_URLS="http://*:9917"
+./perccli_exporter
+```
+
+### 容器（Docker）
+Docker Hub：https://hub.docker.com/r/1023785565/perccli_exporter  
+示例标签：`1023785565/perccli_exporter:v1.0.0`
+
+```bash
+docker pull 1023785565/perccli_exporter:v1.0.0
+docker run --rm -p 9917:9917 1023785565/perccli_exporter:v1.0.0
+```
+
+修改监听端口：
+
+```bash
+docker run --rm -p 9999:9999 1023785565/perccli_exporter:v1.0.0 --port 9999
+```
+
+说明：
+- 容器内已包含 `perccli64`，并且默认以 `root` 身份运行。
+
+### 端口覆盖优先级
+- 最高：`ASPNETCORE_URLS` / `--urls`（ASP.NET Core 标准方式）。
+- 其次：`--port` / `-p`。
+- 然后：`PERC_EXPORTER_PORT` / `PORT`。
+- 最后：`appsettings.json` 里的 `Urls`。
+
+## 🧱 工作原理
+- 执行 `perccli64 show J` 获取控制器列表。
+- 对每个控制器执行 `perccli64 /c{ctl}/vall show all J` 采集 VD/PD 信息。
+- Linux 下实际会通过 `sudo perccli64 ...` 执行。
 
 ## 📈 指标列表
 ### 🎛️ 控制器指标
@@ -122,7 +152,7 @@ $env:ASPNETCORE_URLS="http://*:9917"
 | 指标名称 | 标签 | 说明 |
 | --- | --- | --- |
 | `perccli_physical_drive_info` | `ctl`, `vd`, `eid`, `slt`, `did`, `dg`, `intf`, `med`, `model`, `type`, `sed`, `pi` | 物理盘元信息（值恒为 1） |
-| `perccli_physical_drive_state` | `ctl`, `vd`, `eid`, `slt` | 物理盘状态（1=Onln，2=Offln，3=Rbld，4=GHS，5=UGood，0=其他） |
+| `perccli_physical_drive_state` | `ctl`, `vd`, `eid`, `slt` | 物理盘状态（实现内做了映射） |
 | `perccli_physical_drive_size_bytes` | `ctl`, `vd`, `eid`, `slt` | 物理盘容量（字节） |
 | `perccli_physical_drive_sector_size_bytes` | `ctl`, `vd`, `eid`, `slt` | 物理盘扇区大小（字节） |
 | `perccli_physical_drive_sp_status` | `ctl`, `vd`, `eid`, `slt` | 热备状态（0=非热备，1=专用热备 HS，2=全局热备 PS） |
