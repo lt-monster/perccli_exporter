@@ -8,7 +8,7 @@ using ConnectionInfo = Renci.SshNet.ConnectionInfo;
 namespace PercCli.Exporter.Tests.Collectors;
 
 //通过SSH方式采集
-public sealed class SshPercCollector(PercCollectOptions collOpts, PercMetricStore metricStore): PercCollector(metricStore)
+public sealed class SshPercCollector(PercMetricStore metricStore, TestPercCollectOptions collOpts): PercCollector(metricStore, collOpts)
 {
     private const string CMD_CONTROLLERS_SUOD = "sudo perccli64 show J";
     

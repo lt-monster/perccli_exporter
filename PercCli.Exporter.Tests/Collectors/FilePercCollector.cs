@@ -3,7 +3,7 @@ using PercCli.Exporter.Stores;
 
 namespace PercCli.Exporter.Tests.Collectors;
 
-public sealed class FilePercCollector(PercMetricStore metricStore): PercCollector(metricStore)
+public sealed class FilePercCollector(PercMetricStore metricStore, PercCollectOptions percOptions) : PercCollector(metricStore, percOptions)
 {
     public override async Task CollectControllerMetrics(CancellationToken stoppingToken)
     {

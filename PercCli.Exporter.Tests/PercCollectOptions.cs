@@ -7,13 +7,11 @@ public enum StartMode
     Ssh = 0x02,
 }
 
-public sealed class PercCollectOptions
+public sealed class TestPercCollectOptions: PercCollectOptions
 {
     public StartMode StartMode { get; set; } = StartMode.Process;
 
     public PercSshConfig? SshConfig { get; set; }
-
-    public int PollingInterval { get; set; } = 3;
 }
 
 public sealed class PercSshConfig
