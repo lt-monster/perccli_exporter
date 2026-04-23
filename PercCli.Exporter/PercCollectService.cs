@@ -18,9 +18,11 @@ public sealed class PercCollectService(PercCollectOptions collOpts, PercCollecto
             await collector.CollectVirtualDriveMetrics(stoppingToken);
             
             collector.Update();
+
+            var (ctlCount, vdCount, pdCount) = collector.GetCount();
             
             sw.Stop();
-            Console.WriteLine($"Query took {sw.Elapsed}.");
+            Console.WriteLine($"Query {sw.ElapsedMilliseconds}ms | controllers={ctlCount}, virtual_drives={vdCount}, physical_drives={pdCount}");
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }
