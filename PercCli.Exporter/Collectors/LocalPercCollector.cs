@@ -4,7 +4,7 @@ using PercCli.Exporter.Stores;
 
 namespace PercCli.Exporter.Collectors;
 
-public sealed class LocalPercCollector(PercMetricStore metricStore) : PercCollector(metricStore)
+public sealed class LocalPercCollector(PercMetricStore metricStore, PercCollectOptions percOptions) : PercCollector(metricStore, percOptions)
 {
     private static async Task RunCommand(string filename, string arguments, Func<Stream, Task> handler, CancellationToken stoppingToken)
     {
@@ -39,7 +39,14 @@ public sealed class LocalPercCollector(PercMetricStore metricStore) : PercCollec
             }
             else
             {
-                await RunCommand("sudo", "perccli64 show J", stream => HandingControllers(stream, stoppingToken), stoppingToken);
+                if (PercOptions.IsRoot)
+                {
+                    await RunCommand("perccli64", "show J", stream => HandingControllers(stream, stoppingToken), stoppingToken);
+                }
+                else
+                {
+                    await RunCommand("sudo", "perccli64 show J", stream => HandingControllers(stream, stoppingToken), stoppingToken);
+                }
             }
         }
         catch (Exception ex)

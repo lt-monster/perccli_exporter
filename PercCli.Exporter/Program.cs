@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Hosting;
 using PercCli.Exporter;
 using PercCli.Exporter.Collectors;
 using PercCli.Exporter.Stores;
@@ -63,6 +62,20 @@ if (!HasUrlsOverride(args))
 }
 
 var percOptions = builder.Configuration.GetSection("PercOption").Get<PercCollectOptions>() ?? new();
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+    try {
+        var startInfo = new ProcessStartInfo {
+            FileName = "id",
+            Arguments = "-u",
+            RedirectStandardOutput = true,
+            UseShellExecute = false
+        };
+        using var process = Process.Start(startInfo);
+        var output = process?.StandardOutput.ReadToEnd().Trim();
+        percOptions.IsRoot = output == "0";
+    } catch { }
+}
 builder.Services.AddSingleton(percOptions);
 
 builder.Services.AddSingleton<PercMetricStore>();

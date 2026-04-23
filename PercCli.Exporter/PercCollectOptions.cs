@@ -1,6 +1,8 @@
 ﻿namespace PercCli.Exporter;
 
-public sealed class PercCollectOptions
+public class PercCollectOptions
 {
     public int PollingInterval { get; set; } = 3;
+    
+    public bool IsRoot { get; set; }
 }
